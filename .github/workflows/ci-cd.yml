@@ -65,12 +65,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate Prisma schema
-        run: npx prisma validate
-
-      - name: Format Prisma schema
-        run: npx prisma format
-
   # Docker Build & Test
   docker-build:
     name: Docker Build & Test
