@@ -3,10 +3,12 @@ import * as fs from "fs";
 
 export default defineConfig({
   component: {
+    specPattern: "cypress/component/**/*.cy.{js,jsx,ts,tsx}",
     devServer: {
       framework: "next",
       bundler: "webpack",
     },
+    supportFile: "cypress/support/component.ts",
   },
 
   e2e: {
