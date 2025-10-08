@@ -52,7 +52,7 @@ export default function AboutPreview() {
             </div>
 
             <p className="text-gray-600 leading-relaxed text-lg">
-              At Excel Academy, we believe every student has unique talents
+              At Northgate Academy, we believe every student has unique talents
               waiting to be discovered. Our dedicated faculty and modern
               facilities create an environment where curiosity thrives and
               excellence becomes a habit.
