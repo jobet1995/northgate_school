@@ -38,7 +38,6 @@ jest.mock("framer-motion", () => ({
       [key: string]: unknown;
     }) => {
       // Filter out framer-motion specific props that shouldn't go to DOM
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const {
         initial,
         animate,
@@ -50,6 +49,17 @@ jest.mock("framer-motion", () => ({
         whileTap,
         ...domProps
       } = props;
+
+      // Suppress unused variable warnings for framer-motion props
+      void initial;
+      void animate;
+      void exit;
+      void transition;
+      void viewport;
+      void whileInView;
+      void whileHover;
+      void whileTap;
+
       return (
         <div data-testid="mocked-motion-div" {...domProps}>
           {children}
