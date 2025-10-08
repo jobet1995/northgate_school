@@ -1,0 +1,269 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ================================
+// Enum Types
+// ================================
+
+enum UserRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+  WITHDRAWN
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+// ================================
+// Models
+// ================================
+
+model User {
+  // Fields
+  id           String   @id @default(cuid())
+  name         String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  password     String   @db.VarChar(255)
+  role         UserRole @default(STUDENT)
+  profilePhoto String?  @db.VarChar(500)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  student               Student?
+  teacher               Teacher?
+  announcements         Announcement[]
+  feedback              Feedback[]
+  admissionApplications AdmissionApplication[]
+  eventAttendees        EventAttendee[]
+
+  @@map("users")
+}
+
+model Student {
+  // Fields
+  id              String   @id @default(cuid())
+  userId          String   @unique @db.VarChar(255)
+  admissionNumber String   @unique @db.VarChar(50)
+  gradeLevel      String   @db.VarChar(20)
+  dateOfBirth     DateTime @db.Date
+  address         String   @db.Text
+  guardianName    String   @db.VarChar(255)
+  guardianContact String   @db.VarChar(100)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments Enrollment[]
+
+  @@map("students")
+}
+
+model Teacher {
+  // Fields
+  id              String   @id @default(cuid())
+  userId          String   @unique @db.VarChar(255)
+  specialization  String   @db.VarChar(255)
+  experienceYears Int      @db.Int
+  hireDate        DateTime @db.Date
+  bio             String?  @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseTeachers CourseTeacher[]
+
+  @@map("teachers")
+}
+
+model Course {
+  // Fields
+  id          String  @id @default(cuid())
+  title       String  @db.VarChar(255)
+  description String  @db.Text
+  code        String  @unique @db.VarChar(20)
+  credits     Int     @db.Int
+  isActive    Boolean @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  enrollments    Enrollment[]
+  courseTeachers CourseTeacher[]
+
+  @@map("courses")
+}
+
+model CourseTeacher {
+  // Fields
+  id        String @id @default(cuid())
+  courseId  String @db.VarChar(255)
+  teacherId String @db.VarChar(255)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, teacherId])
+  @@map("course_teachers")
+}
+
+model Enrollment {
+  // Fields
+  id             String           @id @default(cuid())
+  studentId      String           @db.VarChar(255)
+  courseId       String           @db.VarChar(255)
+  enrollmentDate DateTime         @default(now()) @db.Timestamp(6)
+  status         EnrollmentStatus @default(ACTIVE)
+  grade          String?          @db.VarChar(10)
+  semester       String?          @db.VarChar(20)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId, semester])
+  @@map("enrollments")
+}
+
+model Event {
+  // Fields
+  id           String   @id @default(cuid())
+  title        String   @db.VarChar(255)
+  description  String   @db.Text
+  date         DateTime @db.DateTime(6)
+  location     String   @db.VarChar(255)
+  isPublic     Boolean  @default(true)
+  bannerImage  String?  @db.VarChar(500)
+  maxAttendees Int?
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  attendees EventAttendee[]
+
+  @@map("events")
+}
+
+model EventAttendee {
+  // Fields
+  id      String @id @default(cuid())
+  eventId String @db.VarChar(255)
+  userId  String @db.VarChar(255)
+  status  String @default("REGISTERED") @db.VarChar(20)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_attendees")
+}
+
+model AdmissionApplication {
+  // Fields
+  id             String            @id @default(cuid())
+  studentName    String            @db.VarChar(255)
+  email          String            @db.VarChar(255)
+  phone          String            @db.VarChar(100)
+  desiredGrade   String            @db.VarChar(20)
+  status         ApplicationStatus @default(PENDING)
+  submissionDate DateTime          @default(now()) @db.Timestamp(6)
+
+  // Additional fields
+  dateOfBirth     DateTime? @db.Date
+  address         String?   @db.Text
+  guardianName    String?   @db.VarChar(255)
+  guardianContact String?   @db.VarChar(100)
+  previousSchool  String?   @db.VarChar(255)
+  notes           String?   @db.Text
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @db.VarChar(255)
+
+  @@map("admission_applications")
+}
+
+model Announcement {
+  // Fields
+  id       String  @id @default(cuid())
+  title    String  @db.VarChar(255)
+  content  String  @db.Text
+  isActive Boolean @default(true)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId String @db.VarChar(255)
+
+  @@map("announcements")
+}
+
+model Feedback {
+  // Fields
+  id      String  @id @default(cuid())
+  message String  @db.Text
+  isRead  Boolean @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.VarChar(255)
+
+  @@map("feedback")
+}

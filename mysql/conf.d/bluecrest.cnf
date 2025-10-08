@@ -1,0 +1,24 @@
+[mysqld]
+# Performance settings for development
+innodb_buffer_pool_size=128M
+innodb_log_file_size=64M
+max_connections=100
+query_cache_size=32M
+query_cache_type=1
+
+# Character set and collation
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+
+# Logging (adjust as needed for production)
+general_log=0
+slow_query_log=1
+slow_query_log_file=/var/lib/mysql/mysql-slow.log
+long_query_time=2
+
+# Security settings
+skip-name-resolve
+bind-address=0.0.0.0
+
+# Time zone (optional)
+default_time_zone='+00:00'

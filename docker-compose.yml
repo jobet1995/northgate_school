@@ -1,0 +1,106 @@
+version: "3.8"
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: northgate-school-mysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-northgate_root_password}
+      MYSQL_DATABASE: ${DB_NAME:-northgate_school}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./mysql/conf.d:/etc/mysql/conf.d:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD:-northgate_root_password}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "app.name=Northgate School MySQL"
+      - "app.version=8.0"
+      - "app.description=MySQL Database for Northgate School"
+    networks:
+      - northgate-school-network
+
+  # Main application service
+  northgate-school:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: northgate-school-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-northgate_school}
+      - DB_USER=root
+      - DB_PASSWORD=${DB_ROOT_PASSWORD:-northgate_root_password}
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      # Exclude node_modules from host mount to use container's version
+      - /app/node_modules
+      # Mount next.js cache for better performance
+      - next_cache:/app/.next
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    command: npm run dev
+    labels:
+      - "app.name=Northgate School"
+      - "app.version=1.0.0"
+      - "app.description=Next.js 15 School Website"
+      - "app.maintainer=DevOps Team"
+    networks:
+      - northgate-school-network
+
+  # Nginx reverse proxy service
+  nginx:
+    image: nginx:alpine
+    container_name: northgate-school-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - northgate-school
+    restart: unless-stopped
+    labels:
+      - "app.name=Northgate School Nginx"
+      - "app.version=1.0.0"
+      - "app.description=Reverse Proxy for Northgate School"
+    networks:
+      - northgate-school-network
+
+volumes:
+  mysql_data:
+    driver: local
+  next_cache:
+    driver: local
+
+networks:
+  northgate-school-network:
+    driver: bridge
