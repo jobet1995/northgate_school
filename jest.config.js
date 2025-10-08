@@ -5,6 +5,7 @@ const config = {
   moduleNameMapper: {
     "\\.(css|less|sass|scss)$": "identity-obj-proxy",
     "\\.(gif|ttf|eot|svg)$": "<rootDir>/__mocks__/fileMock.js",
+    "^@/lib/utils$": "<rootDir>/src/lib/utils",
   },
   transform: {
     "^.+\\.(js|jsx|ts|tsx)$": [
